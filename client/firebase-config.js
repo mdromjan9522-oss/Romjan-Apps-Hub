@@ -6,7 +6,7 @@
    ============================================================= */
 
 // --- CONFIGURATION ---
-const SYNC_MODE = 'API'; // Options: 'API' (Node.js) or 'DIRECT' (Firebase SDK)
+const SYNC_MODE = 'DIRECT'; // Options: 'API' (Node.js) or 'DIRECT' (Firebase SDK)
 const API_BASE  = '/api'; // Use full URL if API is hosted elsewhere (e.g., https://api.yoursite.com/api)
 
 // Firebase Client Config (Only needed if SYNC_MODE is 'DIRECT')
@@ -46,32 +46,36 @@ const REMOTE_DB = {
   _call: async (path, options = {}) => {
     try {
       const res = await fetch(`${API_BASE}${path}`, options);
-      return res.ok ? await res.json() : null;
-    } catch (e) { return null; }
+      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.error(`API Call Failed (${path}):`, e);
+      throw e;
+    }
   },
 
   // Internal helper for Direct Firestore
   _directGet: async (collection) => {
-    if (!_db) return [];
+    if (!_db) throw new Error("Firestore not initialized");
     try {
       const snap = await _db.collection(collection).get();
       return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (e) { console.error(`Firestore Error (${collection}):`, e); return []; }
+    } catch (e) { console.error(`Firestore Error (${collection}):`, e); throw e; }
   },
 
   _directSave: async (collection, data) => {
-    if (!_db) return;
+    if (!_db) throw new Error("Firestore not initialized");
     try {
       const { id, ...payload } = data;
       await _db.collection(collection).doc(id).set(payload, { merge: true });
-    } catch (e) { console.error(`Firestore Save Error (${collection}):`, e); }
+    } catch (e) { console.error(`Firestore Save Error (${collection}):`, e); throw e; }
   },
 
   _directDelete: async (collection, id) => {
-    if (!_db) return;
+    if (!_db) throw new Error("Firestore not initialized");
     try {
       await _db.collection(collection).doc(id).delete();
-    } catch (e) { console.error(`Firestore Delete Error (${collection}):`, e); }
+    } catch (e) { console.error(`Firestore Delete Error (${collection}):`, e); throw e; }
   },
 
   // Sync all apps
