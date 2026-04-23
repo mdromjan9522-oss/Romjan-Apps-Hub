@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Romjan apps Hub</title>
+  <meta name="description" content="Discover and download the best Android apps. Romjan Apps is your go-to alternative app distribution platform — no Play Store needed.">
+  <meta name="keywords" content="Romjan Apps, APK download, Android apps, app distribution">
+  <meta property="og:title" content="Romjan Apps — Premium App Distribution">
+  <meta property="og:description" content="Browse, download, and manage Android apps easily.">
+  <link rel="icon" type="image/png" href="/letter-r.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <!-- UI is rendered via script.js -->
+  
+  <!-- Firebase SDKs (Required for Direct Mode / InfinityFree) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- JavaScript Backend Sync (Secret Load) -->
+  <script>
+    (async () => {
+      try {
+        const r = await fetch('firebase-config.js');
+        const c = await r.text();
+        const s = document.createElement('script');
+        s.textContent = c;
+        document.head.appendChild(s);
+        s.remove(); // Sources ট্যাব থেকে হাইড করার জন্য ট্যাগ রিমুভ করা হয়েছে
+      } catch (e) { console.error('Config failed'); }
+    })();
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
