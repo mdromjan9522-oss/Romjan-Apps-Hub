@@ -376,13 +376,17 @@ async function seedData() {
     await REMOTE_DB.saveAdmin(DEFAULT_OWNER);
   }
 
-  // Optimize: Load data in parallel
+  // Optimize: Load data in parallel with fallback
   const hasRemoteDB = typeof REMOTE_DB !== 'undefined';
+  const safeFetch = async (fn) => {
+    try { return await fn(); } catch (e) { console.warn('Fetch failed, using local fallback:', e); return []; }
+  };
+
   const [remoteCats, remoteApps, remoteUsers, remoteSocial] = await Promise.all([
-    hasRemoteDB ? REMOTE_DB.getCategories() : Promise.resolve([]),
-    hasRemoteDB ? REMOTE_DB.getApps() : Promise.resolve([]),
-    hasRemoteDB ? REMOTE_DB.getUsers() : Promise.resolve([]),
-    hasRemoteDB ? REMOTE_DB.getSocialLinks() : Promise.resolve([])
+    hasRemoteDB ? safeFetch(() => REMOTE_DB.getCategories()) : Promise.resolve([]),
+    hasRemoteDB ? safeFetch(() => REMOTE_DB.getApps()) : Promise.resolve([]),
+    hasRemoteDB ? safeFetch(() => REMOTE_DB.getUsers()) : Promise.resolve([]),
+    hasRemoteDB ? safeFetch(() => REMOTE_DB.getSocialLinks()) : Promise.resolve([])
   ]);
 
   // Handle Categories
