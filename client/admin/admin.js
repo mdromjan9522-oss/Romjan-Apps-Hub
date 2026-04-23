@@ -838,7 +838,7 @@ function previewAppIcon(input) {
   r.readAsDataURL(f);
 }
 
-function saveApp(editId) {
+async function saveApp(editId) {
   const isOwner = S.session?.role === 'owner';
   const perm = S.session?.permissions || {};
   
@@ -852,37 +852,42 @@ function saveApp(editId) {
 
   if (!name || !desc) { toast('Name and description are required', 'warning'); return; }
 
-  if (editId) {
-    const app = S.apps.find(a=>a.id===editId);
-    if (app) {
-      // If user has edit permission, update info
-      if (isOwner || perm.edit) {
-        Object.assign(app, { name, category:cat, desc, version:ver, icon:emoji });
-        if (pendingIcon) app.iconData = pendingIcon;
+  const syncToast = toast('Saving and syncing...', 'info');
+
+  try {
+    if (editId) {
+      const app = S.apps.find(a=>a.id===editId);
+      if (app) {
+        if (isOwner || perm.edit) {
+          Object.assign(app, { name, category:cat, desc, version:ver, icon:emoji });
+          if (pendingIcon) app.iconData = pendingIcon;
+        }
+        if (isOwner || perm.update) {
+          app.apkName = apk;
+          app.size = size;
+        }
       }
-      
-      // If user has update permission, update APK & Size
-      if (isOwner || perm.update) {
-        app.apkName = apk;
-        app.size = size;
+      await saveApps();
+      toast('App updated and synced!', 'success');
+    } else {
+      if (!isOwner && !perm.upload) {
+        toast('You do not have permission to upload apps', 'error');
+        return;
       }
+      const newApp = { id:uid(), name, category:cat, desc, version:ver, size, icon:emoji, apkName:apk,
+        iconData: pendingIcon||null, downloads:0, createdAt:Date.now() };
+      S.apps.push(newApp);
+      await saveApps();
+      toast('App uploaded and synced!', 'success');
     }
-    toast('App updated successfully!', 'success');
-  } else {
-    // For new uploads, must have upload permission
-    if (!isOwner && !perm.upload) {
-      toast('You do not have permission to upload apps', 'error');
-      return;
-    }
-    S.apps.push({ id:uid(), name, category:cat, desc, version:ver, size, icon:emoji, apkName:apk,
-      iconData: pendingIcon||null, downloads:0, createdAt:Date.now() });
-    toast('App uploaded!', 'success');
+    pendingIcon = null;
+    closeModal('appModal');
+    renderAppsTable();
+    updateSidebarCounts();
+  } catch (e) {
+    console.error('Sync Error:', e);
+    toast('Local save successful, but sync failed. Check console.', 'warning');
   }
-  pendingIcon = null;
-  saveApps();
-  closeModal('appModal');
-  renderAppsTable();
-  updateSidebarCounts();
 }
 
 function confirmDeleteApp(id) {
